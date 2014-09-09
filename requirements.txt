@@ -1,1 +1,1 @@
-GitPython==0.3.2.RC1
+git+https://github.com/mrasskazov/GitPython.git@0.3.GPG
