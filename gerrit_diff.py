@@ -42,7 +42,7 @@ def main():
 
     repo_path = '/home/rmv/devel/mirantis/osci/fuel/fuel-main'
     dst_branch = 'master'
-    src_branch = 'stable/5.0'
+    src_branch = 'stable/5.1'
 
     repo = Repo.init(repo_path)
     git = repo.git
