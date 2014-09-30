@@ -24,6 +24,20 @@ def get_change_id(commit):
     return get_attr(commit, ischid)
 
 
+def get_attrs(commit, regexp):
+    message = re.split(r'\n+', commit.message)
+    attrs = list()
+    for l in message:
+        if regexp.match(l) is not None:
+            attrs.append([_.strip() for _ in re.split(r':\s*', l)])
+    return attrs
+
+
+def get_change_id_refs(commit):
+    ischidref = re.compile(r'.*change-id.*:.*', re.IGNORECASE)
+    return get_attrs(commit, ischidref)
+
+
 def main():
 
     repo_path = '/home/rmv/devel/mirantis/osci/fuel/fuel-main'
