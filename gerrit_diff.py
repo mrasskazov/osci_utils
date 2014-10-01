@@ -5,6 +5,8 @@ import logging
 import re
 
 from git import Repo
+from gerritlib.gerrit import Gerrit
+from pprint import pprint
 
 #logging.basicConfig(level=logging.DEBUG)
 logging.basicConfig(level=logging.INFO)
@@ -44,6 +46,11 @@ def main():
     dst_branch = 'master'
     src_branch = 'stable/5.1'
 
+    gerrit_hostname = 'review.openstack.org'
+    gerrit_username = 'rmv'
+    gerrit_port = 29418
+    gerrit_keyfile = None
+
     repo = Repo.init(repo_path)
     git = repo.git
     dst = repo.heads[dst_branch]
@@ -55,15 +62,33 @@ def main():
                                no_merges=True):
         dst_chids.append(get_change_id(c))
 
+    gerrit = Gerrit(gerrit_hostname, gerrit_username,
+                    gerrit_port, gerrit_keyfile)
+
+    proposed = gerrit.bulk_query('project:stackforge/fuel-main '
+                                 'branch:{} '
+                                 'status:open'.
+                                 format(dst_branch))
+    proposed_chids = list()
+    for p in proposed:
+        if p.get('id') is not None:
+            proposed_chids.append(p['id'])
+
     src_commits = list()
     for c in repo.iter_commits('{}..{}'.format(merge_base.hexsha, src.name),
                                no_merges=True):
         chid = get_change_id(c)
         if chid is not None:
             if chid not in dst_chids:
-                src_commits.append(c)
-                logger.info('Adding {} - Change-Id {} is absent in {}'.
-                            format(c.hexsha, chid, dst.name))
+                if chid not in proposed_chids:
+                    src_commits.append(c)
+                    logger.info('Adding {} - Change-Id {} is absent in {} '
+                                'and in proposal'.
+                                format(c.hexsha, chid, dst.name))
+                else:
+                    logger.info('Skipping {} - Change-Id {} is absent in {} '
+                                 'but exists in proposal'.
+                                 format(c.hexsha, chid, dst.name))
             else:
                 logger.debug('Skiping {} - Change-Id {} already in {}'.
                              format(c.hexsha, chid, dst.name))
